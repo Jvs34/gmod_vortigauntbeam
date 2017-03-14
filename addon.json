@@ -1,0 +1,14 @@
+{
+    "description": "Description",
+    "ignore": [
+        "logo.*",
+        ".git*",
+        "README.md"
+    ],
+    "logo": "logo.jpg",
+    "tags": [
+        "fun"
+    ],
+    "title": "Vortigaunt Beam",
+    "type": "weapon"
+}
