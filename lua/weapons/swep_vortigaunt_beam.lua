@@ -7,6 +7,11 @@ end
 
 DEFINE_BASECLASS( "weapon_base" )
 
+game.AddParticles( "particles/vortigaunt_fx.pcf" )
+
+PrecacheParticleSystem( "vortigaunt_beam" )
+PrecacheParticleSystem( "vortigaunt_beam_charge" )
+
 SWEP.Spawnable = true
 SWEP.AdminOnly = false
 SWEP.PrintName = "Vortigaunt Beam"
@@ -62,13 +67,26 @@ if CLIENT then
 end
 
 function SWEP:SetupDataTable()
-
+	
+	self:NetworkVar( "Float" , 0 , "NextChargeAttack" )
+	self:NetworkVar( "Float" , 1 , "NextIdle" )
+	self:NetworkVar( "Float" , 2 , "NextHeal" )
 end
 
 function SWEP:Initialize()
 	if SERVER then
 		self:SetHoldType( "slam" )
 	end
+end
+
+function SWEP:Deploy()
+	
+	return true
+end
+
+function SWEP:Holster()
+	
+	return true
 end
 
 function SWEP:Think()
