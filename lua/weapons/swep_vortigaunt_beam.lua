@@ -11,6 +11,8 @@ game.AddParticles( "particles/vortigaunt_fx.pcf" )
 
 PrecacheParticleSystem( "vortigaunt_beam" )
 PrecacheParticleSystem( "vortigaunt_beam_charge" )
+PrecacheParticleSystem( "vortigaunt_charge_token" )
+
 
 SWEP.Spawnable = true
 SWEP.AdminOnly = false
@@ -24,14 +26,14 @@ SWEP.RenderGroup = RENDERGROUP_BOTH
 SWEP.Slot = 1
 
 SWEP.Primary = {
-	Automatic = true,
+	Automatic = false,
 	ClipSize = -1,
 	DefaultClip = -1,
 	Ammo = "",	
 }
 
 SWEP.Secondary = {
-	Automatic = true,
+	Automatic = false,
 	ClipSize = -1,
 	DefaultClip = -1,
 	Ammo = "",
@@ -39,8 +41,45 @@ SWEP.Secondary = {
 
 SWEP.UseHands = true
 SWEP.ViewModel = "models/weapons/v_vortbeamvm.mdl"
-SWEP.WorldModel = ""
+SWEP.WorldModel = "models/dav0r/hoverball.mdl"
 
+SWEP.Beam = {
+	Damage = 75,
+	DamageForce = 48000,
+	Range = 2400,
+	ChargeTime = 1.25,
+	SplashRadius = 48,
+	BeamHitbox = {
+		Min = Vector( -16 , -16 , -16 ),
+		Max = Vector( 16 , 16 , 16 ),
+	},
+	Sounds = {
+		Attack = "",
+		Charge = "",
+		Heal = "",
+	},
+	Particles = {
+		Attack = "",
+		Idle = "",
+		Heal = "",
+	},
+	--when both are false, healing is completely disabled
+	HealHealth = true, --should we heal hp?
+	HealArmor = true, --should we heal armor?
+	HealHealthFirst = true, --if true, heal hp before armor, if false, do both
+	HealAmount = 15,
+	HealTime = 1, --seconds until the next heal
+	MaxArmor = 100,	--once we have GetMaxArmor this will go away, eventually
+}
+
+if SERVER then
+
+else
+	AccessorFunc( SWEP , "_vchargeparticle" , "VortigauntChargeParticle" )
+	AccessorFunc( SWEP , "_vhealparticle" , "VortigauntHealParticle" )
+	AccessorFunc( SWEP , "_vidleparticle" , "VortigauntIdleParticle" )
+
+end
 
 if CLIENT then
 	--we mostly use this to make the viewmodel invisible so we can still bonemerge the c_hands onto it
@@ -57,60 +96,151 @@ if CLIENT then
 	end
 	
 	function SWEP:ViewModelDrawn( vm )
-	
+		if IsValid( vm ) and vm:ViewModelIndex() == 0 then
+			--draw particles such as the idle, charge attack and healing ones
+			self:CheckVortigauntParticles()
+			self:DrawVortigauntParticles( false , vm )
+		end
 	end
 	
 	function SWEP:DrawWorldModel()
-
+		self:CheckVortigauntParticles()
+		self:DrawVortigauntParticles( true , self:GetOwner() )
 	end
 	
+	function SWEP:DrawVortigauntParticles( isthirdperson , ent )
+		if isthirdperson and not IsValid( ent ) then
+			--this means that we're drawing the entity on its own, likely someone duped it and spawned it on the ground
+			
+			return
+		end
+		
+	end
+	
+	function SWEP:CheckVortigauntParticles()
+		if not IsValid( self:GetVortigauntChargeParticle() ) then
+			local particle = CreateParticleSystem( self , "vortigaunt_charge_token" , 0 )
+			
+			self:SetVortigauntChargeParticle( particle )
+		end
+	end
+	
+	function SWEP:DestroyVortigauntParticles()
+		if IsValid( self:GetVortigauntChargeParticle() ) then
+			self:GetVortigauntChargeParticle():StopEmissionAndDestroyImmediately()
+			self:SetVortigauntChargeParticle( nil )
+		end
+	end
 end
 
-function SWEP:SetupDataTable()
+function SWEP:SetupDataTables()
 	
 	self:NetworkVar( "Float" , 0 , "NextChargeAttack" )
 	self:NetworkVar( "Float" , 1 , "NextIdle" )
 	self:NetworkVar( "Float" , 2 , "NextHeal" )
+	
 end
 
 function SWEP:Initialize()
 	if SERVER then
 		self:SetHoldType( "slam" )
+		self:ResetVariables()
 	end
 end
 
+function SWEP:ResetVariables()
+	self:SetNextChargeAttack( -1 )
+	self:SetNextIdle( -1 )
+	self:SetNextHeal( -1 )
+end
+
+function SWEP:CheckVortigauntSounds()
+
+end
+
+function SWEP:DestroyVortigauntSounds()
+
+end
+
 function SWEP:Deploy()
-	
+	self:ResetVariables()
+	self:CheckVortigauntSounds()
 	return true
 end
 
 function SWEP:Holster()
-	
+	self:ResetVariables()
+	self:DestroyVortigauntSounds()
 	return true
 end
 
 function SWEP:Think()
+	self:CheckVortigauntSounds()
+	
+	if self:GetNextChargeAttack() ~= -1 and self:GetNextChargeAttack() < CurTime() then
+		self:BeamAttack()
+		self:SetNextChargeAttack( -1 )
+	end
+	
+	
+end
 
+function SWEP:CanAttack()
+	return self:GetNextChargeAttack() == -1
 end
 
 function SWEP:PrimaryAttack()
-
+	if not self:CanAttack() then
+		return
+	end
+	
+	--initiate the delayed attack
 end
 
 function SWEP:SecondaryAttack()
-
+	if not self:CanAttack() then
+		return
+	end
+	--initiate the healing
 end
 
 function SWEP:Reload()
 
 end
 
---remove even when we could've dropped to the ground
+function SWEP:BeamAttack()
+	local owner = self:GetOwner()
+	
+	if not IsValid( owner ) then
+		return
+	end
+	
+	if owner:IsPlayer() then
+		owner:LagCompensation( true )
+	end
+	
+	local tr = {
+		
+		
+	}
+	
+	local trres = util.TraceHull( tr )
+	
+	if owner:IsPlayer() then
+		owner:LagCompensation( false )
+	end
+end
+
+--remove even when we've been dropped to the ground
 function SWEP:OnDrop()
-	self:Remove()
+	self:DestroyVortigauntSounds()
+	--self:Remove()
 end
 
 --shut down sounds, particles and whatever is left
 function SWEP:OnRemove()
-
+	self:DestroyVortigauntSounds()
+	if CLIENT then
+		self:DestroyVortigauntParticles()
+	end
 end
