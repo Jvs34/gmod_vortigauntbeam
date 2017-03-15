@@ -104,23 +104,61 @@ if CLIENT then
 	end
 	
 	function SWEP:DrawWorldModel()
+		--self:DrawVortigauntParticles( true , self:GetOwner() )
+		--self:DrawModel()
+		
+		if IsValid( self:GetOwner() ) then
+			--self:DrawVortigauntParticles( true , self:GetOwner() )
+		end
+		
+	end
+	
+	function SWEP:DrawWorldModelTranslucent()
 		self:CheckVortigauntParticles()
 		self:DrawVortigauntParticles( true , self:GetOwner() )
 	end
 	
 	function SWEP:DrawVortigauntParticles( isthirdperson , ent )
+		
+		--this means that we're drawing the entity on its own, likely someone duped it and spawned it on the ground
+		--which is fine, most if not all weapons should support this behaviour
 		if isthirdperson and not IsValid( ent ) then
-			--this means that we're drawing the entity on its own, likely someone duped it and spawned it on the ground
-			
+			self:DrawVortigauntParticlesStandalone()
 			return
 		end
 		
+		--what? just in case though, we're police
+		if not isthirdperson and not IsValid( ent ) then
+			return
+		end
+		
+		if isthirdperson then
+			
+		else
+		
+		end
 	end
+	
+	function SWEP:DrawVortigauntParticlesStandalone()
+		if IsValid( self:GetVortigauntChargeParticle() ) then
+			self:GetVortigauntChargeParticle():SetIsViewModelEffect( false )
+
+			if self:GetVortigauntChargeParticle():IsFinished() then
+				self:GetVortigauntChargeParticle():StartEmission()
+			end
+
+			self:GetVortigauntChargeParticle():SetSortOrigin( self:GetPos() )
+			self:GetVortigauntChargeParticle():SetControlPoint( 0 , self:GetPos() )
+			self:GetVortigauntChargeParticle():Render()
+		end
+	end
+
+	
 	
 	function SWEP:CheckVortigauntParticles()
 		if not IsValid( self:GetVortigauntChargeParticle() ) then
 			local particle = CreateParticleSystem( self , "vortigaunt_charge_token" , 0 )
-			
+			particle:SetShouldDraw( false )
 			self:SetVortigauntChargeParticle( particle )
 		end
 	end
