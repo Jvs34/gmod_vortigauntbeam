@@ -104,12 +104,6 @@ if CLIENT then
 	end
 	
 	function SWEP:DrawWorldModel()
-		--self:DrawVortigauntParticles( true , self:GetOwner() )
-		--self:DrawModel()
-		
-		if IsValid( self:GetOwner() ) then
-			--self:DrawVortigauntParticles( true , self:GetOwner() )
-		end
 		
 	end
 	
@@ -133,9 +127,9 @@ if CLIENT then
 		end
 		
 		if isthirdperson then
-			
+			self:DrawVortigauntParticlesWorldModel( ent )
 		else
-		
+			self:DrawVortigauntParticlesFirstPerson( ent )
 		end
 	end
 	
@@ -153,7 +147,13 @@ if CLIENT then
 		end
 	end
 
+	function SWEP:DrawVortigauntParticlesFirstPerson( vm )
+		
+	end
 	
+	function SWEP:DrawVortigauntParticlesWorldModel( ply )
+	
+	end
 	
 	function SWEP:CheckVortigauntParticles()
 		if not IsValid( self:GetVortigauntChargeParticle() ) then
