@@ -193,17 +193,11 @@ if CLIENT then
 	
 	function SWEP:DrawVortigauntParticlesStandalone()
 		if IsValid( self:GetVortigauntChargeParticleSA() ) then
-			self:GetVortigauntChargeParticleSA():SetIsViewModelEffect( false )
-
+			
 			if self:GetVortigauntChargeParticleSA():IsFinished() then
 				self:GetVortigauntChargeParticleSA():StartEmission()
 			end
-			
-			--[[
-			self:GetVortigauntChargeParticleSA():SetControlPointEntity( 0 , self )
-			self:GetVortigauntChargeParticleSA():SetSortOrigin( self:GetPos() )
-			self:GetVortigauntChargeParticleSA():SetControlPoint( 0 , self:GetPos() )
-			]]
+
 			self:GetVortigauntChargeParticleSA():Render()
 		end
 	end
@@ -271,8 +265,39 @@ if CLIENT then
 		
 		--worldmodel
 		
+		if IsValid( self:GetVortigauntChargeParticleWM() ) then
+			self:GetVortigauntChargeParticleWM():StopEmissionAndDestroyImmediately()
+			self:SetVortigauntChargeParticleWM( nil )
+		end
+		
+		if IsValid( self:GetVortigauntIdleParticleWM() ) then
+			self:GetVortigauntIdleParticleWM():StopEmissionAndDestroyImmediately()
+			self:SetVortigauntIdleParticleWM( nil )
+		end
+		
+		if IsValid( self:GetVortigauntHealParticleWM() ) then
+			self:GetVortigauntHealParticleWM():StopEmissionAndDestroyImmediately()
+			self:SetVortigauntHealParticleWM( nil )
+		end
 		
 		--viewmodel
+		
+		if IsValid( self:GetVortigauntChargeParticleVM() ) then
+			self:GetVortigauntChargeParticleVM():StopEmissionAndDestroyImmediately()
+			self:SetVortigauntChargeParticleVM( nil )
+		end
+		
+		if IsValid( self:GetVortigauntIdleParticleVM() ) then
+			self:GetVortigauntIdleParticleVM():StopEmissionAndDestroyImmediately()
+			self:SetVortigauntIdleParticleVM( nil )
+		end
+		
+		if IsValid( self:GetVortigauntHealParticleVM() ) then
+			self:GetVortigauntHealParticleVM():StopEmissionAndDestroyImmediately()
+			self:SetVortigauntHealParticleVM( nil )
+		end
+		
+		
 	end
 end
 
