@@ -45,18 +45,20 @@ SWEP.WorldModel = "models/dav0r/hoverball.mdl"
 
 SWEP.Beam = {
 	Damage = 75,
-	DamageForce = 48000,
+	DamageForce = 48000, --remove one zero if it's too much
 	Range = 2400,
 	ChargeTime = 1.25,
-	SplashRadius = 48,
+	SplashRadius = 48, --increase to crowbar range (75) if too low
 	BeamHitbox = {
 		Min = Vector( -16 , -16 , -16 ),
 		Max = Vector( 16 , 16 , 16 ),
 	},
 	Sounds = {
-		Attack = "",
-		Charge = "",
-		Heal = "",
+		Attack = "swep_vortigaunt_beam.attack",
+		Charge = "swep_vortigaunt_beam.charge",
+		HealLoop = "swep_vortigaunt_beam.healloop",
+		HealHealth = "swep_vortigaunt_beam.healhealth",
+		HealArmor = "swep_vortigaunt_beam.healarmor",
 	},
 	Particles = {
 		Attack = "",
@@ -72,13 +74,69 @@ SWEP.Beam = {
 	MaxArmor = 100,	--once we have GetMaxArmor this will go away, eventually
 }
 
+sound.Add({
+	name = SWEP.Beam.Sounds.Attack,
+	channel = CHAN_WEAPON,
+	volume = 1.0,
+	level = 75,
+	pitch = { 130 , 160 },
+	sound = "npc/vort/attack_shoot.wav"
+})
+
+sound.Add({
+	name = SWEP.Beam.Sounds.Charge,
+	channel = CHAN_WEAPON,
+	volume = 1.0,
+	level = 75,
+	pitch = 100,
+	sound = "npc/vort/attack_charge.wav"
+})
+
+sound.Add({
+	name = SWEP.Beam.Sounds.HealLoop,
+	channel = CHAN_WEAPON,
+	volume = 1.0,
+	level = 75,
+	pitch = 100,
+	sound = "npc/vort/health_charge.wav"
+})
+
+sound.Add({
+	name = SWEP.Beam.Sounds.HealArmor,
+	channel = CHAN_ITEM,
+	volume = 0.85,
+	level = 75,
+	pitch = 100,
+	sound = "items/suitchargeok1.wav"
+})
+
+sound.Add({
+	name = SWEP.Beam.Sounds.HealHealth,
+	channel = CHAN_ITEM,
+	volume = 0.85,
+	level = 75,
+	pitch = 100,
+	sound = "items/smallmedkit1.wav"
+})
+
+
 if SERVER then
 
 else
-	AccessorFunc( SWEP , "_vchargeparticle" , "VortigauntChargeParticle" )
-	AccessorFunc( SWEP , "_vhealparticle" , "VortigauntHealParticle" )
-	AccessorFunc( SWEP , "_vidleparticle" , "VortigauntIdleParticle" )
+	--worldmodel particles when not equipped, attaches to weapon
+	AccessorFunc( SWEP , "_vchargeparticle_sa" , "VortigauntChargeParticleSA" )
+	
+	--worldmodel particles when equipped on a player, attaches to player
+	AccessorFunc( SWEP , "_vchargeparticle_wm" , "VortigauntChargeParticleWM" )
+	AccessorFunc( SWEP , "_vhealparticle_wm" , "VortigauntHealParticleWM" )
+	AccessorFunc( SWEP , "_vidleparticle_wm" , "VortigauntIdleParticleWM" )
 
+	--viewmodel particles when equipped on a player, attaches to viewmodel
+	AccessorFunc( SWEP , "_vchargeparticle_vm" , "VortigauntChargeParticleVM" )
+	AccessorFunc( SWEP , "_vhealparticle_vm" , "VortigauntHealParticleVM" )
+	AccessorFunc( SWEP , "_vidleparticle_vm" , "VortigauntIdleParticleVM" )
+	
+	
 end
 
 if CLIENT then
@@ -104,7 +162,7 @@ if CLIENT then
 	end
 	
 	function SWEP:DrawWorldModel()
-		
+		self:DrawWorldModelTranslucent()
 	end
 	
 	function SWEP:DrawWorldModelTranslucent()
@@ -134,21 +192,57 @@ if CLIENT then
 	end
 	
 	function SWEP:DrawVortigauntParticlesStandalone()
-		if IsValid( self:GetVortigauntChargeParticle() ) then
-			self:GetVortigauntChargeParticle():SetIsViewModelEffect( false )
+		if IsValid( self:GetVortigauntChargeParticleSA() ) then
+			self:GetVortigauntChargeParticleSA():SetIsViewModelEffect( false )
 
+			if self:GetVortigauntChargeParticleSA():IsFinished() then
+				self:GetVortigauntChargeParticleSA():StartEmission()
+			end
+			
+			--[[
+			self:GetVortigauntChargeParticleSA():SetControlPointEntity( 0 , self )
+			self:GetVortigauntChargeParticleSA():SetSortOrigin( self:GetPos() )
+			self:GetVortigauntChargeParticleSA():SetControlPoint( 0 , self:GetPos() )
+			]]
+			self:GetVortigauntChargeParticleSA():Render()
+		end
+	end
+	
+	local wireframe = Material( "models/wireframe" )
+	
+	function SWEP:DrawVortigauntParticlesFirstPerson( vm )
+		if not disabled then
+		
+			return
+		end
+		
+		
+		local attachment = "muzzle"
+		local pos = vector_origin
+		local ang = angle_zero
+		local attachtab = vm:GetAttachment( 8 ) --vm:LookupAttachment( attachment ) )
+		
+		if attachtab then
+			pos = attachtab.Pos
+			ang = attachtab.Ang	
+		end
+		
+		if IsValid( self:GetVortigauntChargeParticle() ) then
+			
+			self:GetVortigauntChargeParticle():SetIsViewModelEffect( true )
+			
 			if self:GetVortigauntChargeParticle():IsFinished() then
 				self:GetVortigauntChargeParticle():StartEmission()
 			end
-
-			self:GetVortigauntChargeParticle():SetSortOrigin( self:GetPos() )
-			self:GetVortigauntChargeParticle():SetControlPoint( 0 , self:GetPos() )
+			
+						
+			self:GetVortigauntChargeParticle():SetControlPointEntity( 0 , vm )
+			self:GetVortigauntChargeParticle():SetSortOrigin( pos )
+			self:GetVortigauntChargeParticle():SetControlPoint( 0 , pos )
 			self:GetVortigauntChargeParticle():Render()
+			render.SetMaterial( wireframe )
+			render.DrawSphere( pos , 2 , 16 , 16 , color_white )
 		end
-	end
-
-	function SWEP:DrawVortigauntParticlesFirstPerson( vm )
-		
 	end
 	
 	function SWEP:DrawVortigauntParticlesWorldModel( ply )
@@ -156,18 +250,29 @@ if CLIENT then
 	end
 	
 	function SWEP:CheckVortigauntParticles()
-		if not IsValid( self:GetVortigauntChargeParticle() ) then
-			local particle = CreateParticleSystem( self , "vortigaunt_charge_token" , 0 )
+		--standalone particle
+		if not IsValid( self:GetVortigauntChargeParticleSA() ) then
+			local particle = CreateParticleSystem( self , "vortigaunt_charge_token" , PATTACH_ABSORIGIN_FOLLOW )
 			particle:SetShouldDraw( false )
-			self:SetVortigauntChargeParticle( particle )
+			self:SetVortigauntChargeParticleSA( particle )
 		end
+		
+		--worldmodel particles
+		
+		--viewmodel particles
 	end
 	
 	function SWEP:DestroyVortigauntParticles()
-		if IsValid( self:GetVortigauntChargeParticle() ) then
-			self:GetVortigauntChargeParticle():StopEmissionAndDestroyImmediately()
-			self:SetVortigauntChargeParticle( nil )
+		--standalone
+		if IsValid( self:GetVortigauntChargeParticleSA() ) then
+			self:GetVortigauntChargeParticleSA():StopEmissionAndDestroyImmediately()
+			self:SetVortigauntChargeParticleSA( nil )
 		end
+		
+		--worldmodel
+		
+		
+		--viewmodel
 	end
 end
 
