@@ -205,35 +205,41 @@ if CLIENT then
 	local wireframe = Material( "models/wireframe" )
 	
 	function SWEP:DrawVortigauntParticlesFirstPerson( vm )
-		if not disabled then
-		
-			return
-		end
-		
-		
+	
 		local attachment = "muzzle"
 		local pos = vector_origin
 		local ang = angle_zero
-		local attachtab = vm:GetAttachment( 8 ) --vm:LookupAttachment( attachment ) )
+		local attachtab = vm:GetAttachment( vm:LookupAttachment( attachment ) )
 		
 		if attachtab then
 			pos = attachtab.Pos
-			ang = attachtab.Ang	
+			ang = attachtab.Ang
+			local boneid = vm:LookupBone( "ValveBiped.Bip01_R_Hand" )
+			
+			if boneid then
+				local bm = vm:GetBoneMatrix( boneid )
+				
+				pos = bm:GetTranslation()
+				ang = bm:GetAngles()
+			end
 		end
 		
-		if IsValid( self:GetVortigauntChargeParticle() ) then
+		if IsValid( self:GetVortigauntChargeParticleVM() ) then
 			
-			self:GetVortigauntChargeParticle():SetIsViewModelEffect( true )
-			
-			if self:GetVortigauntChargeParticle():IsFinished() then
-				self:GetVortigauntChargeParticle():StartEmission()
+			if self:GetVortigauntChargeParticleVM():IsFinished() then
+				self:GetVortigauntChargeParticleVM():StartEmission()
 			end
 			
-						
-			self:GetVortigauntChargeParticle():SetControlPointEntity( 0 , vm )
+			--[[			
+			
 			self:GetVortigauntChargeParticle():SetSortOrigin( pos )
 			self:GetVortigauntChargeParticle():SetControlPoint( 0 , pos )
-			self:GetVortigauntChargeParticle():Render()
+			]]
+			self:GetVortigauntChargeParticleVM():SetControlPointEntity( 0 , vm )
+			self:GetVortigauntChargeParticleVM():SetSortOrigin( pos )
+			self:GetVortigauntChargeParticleVM():SetControlPoint( 0 , pos )
+			
+			self:GetVortigauntChargeParticleVM():Render()
 			render.SetMaterial( wireframe )
 			render.DrawSphere( pos , 2 , 16 , 16 , color_white )
 		end
@@ -254,6 +260,25 @@ if CLIENT then
 		--worldmodel particles
 		
 		--viewmodel particles
+		
+		
+		if not IsValid( self:GetVortigauntChargeParticleVM() ) then
+			--try to get the viewmodel, fail otherwise
+			local ent = nil
+			
+			if IsValid( self:GetOwner() ) and self:GetOwner():IsPlayer() and IsValid( self:GetOwner():GetViewModel( 0 ) ) then
+				ent = self:GetOwner():GetViewModel( 0 )
+			end
+			
+			if IsValid( ent ) then
+				local particle = CreateParticleSystem( self , "vortigaunt_charge_token" , PATTACH_CUSTOMORIGIN )
+				--local particle = CreateParticleSystem( ent , "vortigaunt_charge_token" , PATTACH_POINT_FOLLOW , ent:LookupAttachment( "muzzle" ) )
+				particle:SetShouldDraw( false )
+				particle:SetIsViewModelEffect( true )
+				self:SetVortigauntChargeParticleVM( particle )
+			end
+		end
+		
 	end
 	
 	function SWEP:DestroyVortigauntParticles()
